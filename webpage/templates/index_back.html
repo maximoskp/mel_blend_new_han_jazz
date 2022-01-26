@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html>
+<head>
+<!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script> -->
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
+<script src="https://code.highcharts.com/highcharts.js"></script>
+<script type='text/javascript' src='//www.midijs.net/lib/midi.js'></script>
+<!-- <script src="https://code.highcharts.com/modules/exporting.js"></script> -->
+<script src="static/js/main.js"></script>
+<script src="/static/js/opensheetmusicdisplay.min.js"></script>
+<!-- <script src="static/js/opensheetmusicdisplay.js"></script> -->
+<style>
+  .slidecontainer {
+      width: 80%;
+  }
+  
+  .slider {
+    -webkit-appearance: none;
+    height: 200px;
+    border-radius: 5px;
+    background: #ccc;
+    outline: none;
+    writing-mode: bt-lr; /* IE */
+    -webkit-appearance: slider-vertical;
+  }
+  
+  .slider:hover {
+      opacity: 1;
+  }
+  
+  .slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 25px;
+      height: 25px;
+      background: rgb(33, 195, 216);
+      cursor: pointer;
+  }
+  
+  .slider::-moz-range-thumb {
+      width: 25px;
+      height: 25px;
+      background: rgb(33, 195, 216);
+      cursor: pointer;
+  }
+  </style>
+<script>
+  console.log('-- lala0...');
+  var osmd_jazz = [];
+  var osmd_han = [];
+  var osmd_blend = [];
+  var piece_name_jazz = [];
+  var piece_name_han = [];
+  var all_f1 = []; // features of all Han
+  var all_f2 = []; // features of all Jazz
+  var f1 = [0,0,0,0]; // features of input 1 only
+  var f2 = [0,0,0,0]; // features of input 2 only
+  var target = [0,0,0,0];
+  var blended_features = [0,0,0,0];
+  var bl_path = [];
+  var bl_name_mid = [];
+  var bl_name_xml = [];
+  var names1 = [];
+  var names2 = [];
+  var idx1 = [];
+  var idx2 = [];
+  var progress_check_function = []
+  $(document).ready(function(){
+    // $.post( "/get_data", JSON.stringify(data2send), function(la){console.log(la)});
+    document.getElementById('pieces_num').value = 1.0;
+    $.post( "/get_initial_data", JSON.stringify({}), function(resp){
+      // console.log(resp);
+      initialise_chart(resp['s_pca_1'], resp['s_pca_2'], resp['s_names_1'], resp['s_names_2']);
+      all_f1 = resp['s_features_1'];
+      all_f2 = resp['s_features_2'];
+      names1 = resp['s_names_1'];
+      names2 = resp['s_names_2'];
+    });
+    osmd_jazz = new opensheetmusicdisplay.OpenSheetMusicDisplay("container_jazz");
+    osmd_han = new opensheetmusicdisplay.OpenSheetMusicDisplay("container_han");
+    osmd_blend = new opensheetmusicdisplay.OpenSheetMusicDisplay("container_blend");
+    // osmd.load("/static/all_xmls/han1161.xml").then( function() { 
+    //   osmd.zoom = 0.5;
+    //   osmd.render();
+    // });
+  });
+</script>
+</head>
+<body>
+  <div style="display: flex; flex-direction: row; justify-content: center; align-items: center; width: 70%; padding-left: 20%">
+      <div style="float: right">
+        <input type="range" orient="vertical" min="0" max="1" value="0.5" step="0.01" class="slider" id="pieces_num" float="right" oninput="sliderChanged(this.value)" onchange="sliderChanged(this.value)">
+      </div>
+      <div id="container" style="min-width: 310px; height: 600px; max-width: 800px; margin: 0 auto"></div>
+  </div>
+  <div style="display: flex; flex-direction: row; justify-content: center; vertical-align: top; align-items: flex-start; width: 100%;">
+    <div style="display: block; flex-direction: column; justify-content: flex-start; vertical-align: top; align-items: flex-start; width: 400px; border: 1px solid black;">
+      <div style="display: flex; flex-direction: row; justify-content: center; align-items: centre; width: 400px">
+        <button onclick="playMidi('han')">Play</button>
+        <button onclick="stopMidi()">Stop</button>
+      </div>
+      <div style="display: flex; flex-direction: row; justify-content: center; align-items: center; width: 400px;">
+        Select features to blend from input 1 (Han)
+      </div>
+      <div style="display: flex; flex-direction: row; justify-content: center; align-items: centre; width: 400px">
+        <div style="border: 1px solid black;">
+          <label id="in1_f1" title="Rhythm density">f1: 0.00</label>
+          <input type="checkbox" id="in1_r_dens" title="Rhythm density" onclick="in1_r_dens(this)">
+        </div>
+        <div style="border: 1px solid black;">
+          <label id="in1_f2" title="Rhythm inhomegeneity">f2 0.00</label>
+          <input type="checkbox" id="in1_r_inhom" title="Rhythm inhomegeneity" onclick="in1_r_inhom(this)">
+        </div>
+        <div style="border: 1px solid black;">
+          <label id="in1_f3" title="Pitch class profile information entropy">f3: 0.00</label>
+          <input type="checkbox" id="in1_pcp_ie" title="Pitch class profile information entropy" onclick="in1_pcp_ie(this)">
+        </div>
+        <div style="border: 1px solid black;">
+          <label id="in1_f4" title="Small intervals (&lt 3 semitones)">f4: 0.00</label>
+          <input type="checkbox" id="in1_small_int" title="Small intervals (&lt 3 semitones)" onclick="in1_small_int(this)">
+        </div>
+      </div>
+      <div id="container_han"></div>
+    </div>
+    <div style="display: block; flex-direction: column; justify-content: flex-start;; vertical-align: top; align-items: flex-start; width: 400px; border: 1px solid black;">
+      <div style="display: flex; flex-direction: row; justify-content: center; align-items: centre; width: 400px;">
+        <button onclick="playMidi('blend')">Play</button>
+        <button onclick="stopMidi()">Stop</button>
+      </div>
+      <div style="display: flex; flex-direction: row; justify-content: center; align-items: center; width: 400px;">
+        <b><label title="The blend will be constructed to reflect those features">Target: </label></b>
+        <div style="border: 1px solid black;">
+          <label id="tar_f1" title="Rhythm density">f1: 0.00</label>
+          <label id="tar_f2" title="Rhythm inhomegeneity">-f2: 0.00</label>
+          <label id="tar_f3" title="Pitch class profile information entropy">-f3: 0.00</label>
+          <label id="tar_f4" title="Small intervals (&lt 3 semitones)">-f4: 0.00</label>
+        </div>
+      </div>
+      <div style="display: flex; flex-direction: row; justify-content: center; align-items: centre; width: 400px;">
+        <button onclick="blend()" title="Blend the selected features of the selected melodies">Blend!</button>
+        <div style="border: 1px solid black;">
+          <label id="bl_f1" title="Rhythm density">f1: 0.00</label>
+          <label id="bl_f2" title="Rhythm inhomegeneity">-f2: 0.00</label>
+          <label id="bl_f3" title="Pitch class profile information entropy">-f3: 0.00</label>
+          <label id="bl_f4" title="Small intervals (&lt 3 semitones)">-f4: 0.00</label>
+        </div>
+      </div>
+      <div id="container_blend"></div>
+    </div>
+    <div style="display: block; flex-direction: column; justify-content: flex-start; vertical-align: top; align-items: flex-start; width: 400px; border: 1px solid black;">
+      <div style="display: flex; flex-direction: row; justify-content: center; align-items: center; width: 400px;">
+        <button onclick="playMidi('jazz')">Play</button>
+        <button onclick="stopMidi()">Stop</button>
+      </div>
+      <div style="display: flex; flex-direction: row; justify-content: center; align-items: center; width: 400px;">
+        Select features to blend from input 2 (Jazz)
+      </div>
+      <div style="display: flex; flex-direction: row; justify-content: center; align-items: centre; width: 400px">
+        <div style="border: 1px solid black;">
+          <label id="in2_f1" title="Rhythm density">f1: 0.00</label>
+          <input type="checkbox" id="in2_r_dens" title="Rhythm density" onclick="in2_r_dens(this)">
+        </div>
+        <div style="border: 1px solid black;">
+          <label id="in2_f2" title="Rhythm inhomegeneity">f2: 0.00</label>
+          <input type="checkbox" id="in2_r_inhom" title="Rhythm inhomegeneity" onclick="in2_r_inhom(this)">
+        </div>
+        <div style="border: 1px solid black;">
+          <label id="in2_f3" title="Pitch class profile information entropy">f3: 0.00</label>
+          <input type="checkbox" id="in2_pcp_ie" title="Pitch class profile information entropy" onclick="in2_pcp_ie(this)">
+        </div>
+        <div style="border: 1px solid black;">
+          <label id="in2_f4" title="Small intervals (&lt 3 semitones)">f4: 0.00</label>
+          <input type="checkbox" id="in2_small_int" title="Small intervals (&lt 3 semitones)" onclick="in2_small_int(this)">
+        </div>
+      </div>
+      <div id="container_jazz"></div>
+    </div>
+  </div>
+</body>
+<script>
+  function sliderChanged(v){
+    // console.log('v: ', v);
+    update_data_with_percentage(v);
+  }
+  function playMidi(s){
+    MIDIjs.stop();
+    if(s == 'jazz'){
+      if(piece_name_jazz == null){
+        alert('Select a Jazz melody first!');
+      }else{
+        MIDIjs.play(piece_name_jazz);
+      }
+    }else if(s == 'han'){
+      if(piece_name_han == null){
+        alert('Select a Han melody first!');
+      }else{
+        MIDIjs.play(piece_name_han);
+      }
+    }else if(s == 'blend'){
+      if(bl_name_mid.length == 0){
+        alert('Please blend two melodies first!');
+      }else{
+        MIDIjs.play(bl_path+bl_name_mid);
+      }
+    }else{
+      console.log('unknown play option');
+    }
+  }
+  function stopMidi(){
+    MIDIjs.stop();
+  }
+  function blend(){
+    console.log('blending');
+    if(idx1.length == 0 && idx2.length == 0){
+      alert('Please select two melodies first!');
+    }else if(idx1.length == 0){
+      alert('Please select a Jazz melody!');
+    }else if(idx2.length == 0){
+      alert('Please select a Han melody!');
+    }else{
+      // make target features
+      make_target();
+      // start_checking_progress();
+      $.post( "/blend", JSON.stringify({target: target, name1: 'static/all_xmls/han/'+names1[idx1].split(".")[0]+'.xml', name2: 'static/all_xmls/jazz/'+names2[idx2].split(".")[0]+'.xml'}), function(resp){
+        console.log(resp);
+        // stop checking progress
+        // clearInterval(progress_check_function);
+        blended_features = resp['bl_features'];
+        bl_path = resp['bl_path'];
+        bl_name_mid = resp['bl_name_mid'];
+        bl_name_xml = resp['bl_name_xml'];
+        show_blended_features();
+        osmd_blend.load(bl_path+bl_name_xml).then( function() {
+            osmd_blend.zoom = 0.4;
+            osmd_blend.render();
+        });
+      });
+    }
+  }
+  // function start_checking_progress(){
+  //   var progress_check_function = setInterval(function(){
+  //     $.post( "/get_evo_progress", JSON.stringify({}), function(resp){
+  //       console.log('progress: ', resp)
+  //     }, 250);
+  //   });
+  // }
+  function show_blended_features(){
+    document.getElementById('bl_f1').innerHTML = "f1: " + String(blended_features[0].toFixed(2));
+    document.getElementById('bl_f2').innerHTML = "f2: " + String(blended_features[1].toFixed(2));
+    document.getElementById('bl_f3').innerHTML = "f3: " + String(blended_features[2].toFixed(2));
+    document.getElementById('bl_f4').innerHTML = "f4: " + String(blended_features[3].toFixed(2));
+  }
+  function make_target(){
+    if(document.getElementById('in1_r_dens').checked){
+      target[0] = f1[0];
+    }else{
+      target[0] = f2[0];
+    }
+    if(document.getElementById('in1_r_inhom').checked){
+      target[1] = f1[1];
+    }else{
+      target[1] = f2[1];
+    }
+    if(document.getElementById('in1_pcp_ie').checked){
+      target[2] = f1[2];
+    }else{
+      target[2] = f2[2];
+    }
+    if(document.getElementById('in1_small_int').checked){
+      target[3] = f1[3];
+    }else{
+      target[3] = f2[3];
+    }
+  }
+  // initialise all checkboxes
+  document.getElementById('in1_r_dens').checked = true;
+  document.getElementById('in2_r_dens').checked = false;
+  document.getElementById('in1_r_inhom').checked = false;
+  document.getElementById('in2_r_inhom').checked = true;
+  document.getElementById('in1_pcp_ie').checked = true;
+  document.getElementById('in2_pcp_ie').checked = false;
+  document.getElementById('in1_small_int').checked = false;
+  document.getElementById('in2_small_int').checked = true;
+  // checkbox functions
+  function in1_r_dens(c){
+    document.getElementById('in2_r_dens').checked = !c.checked;
+    if(c.checked){
+      document.getElementById('tar_f1').innerHTML = "f1: " + String(f1[0].toFixed(2));
+    }else{
+      document.getElementById('tar_f1').innerHTML = "f1: " + String(f2[0].toFixed(2));
+    }
+  }
+  function in2_r_dens(c){
+    document.getElementById('in1_r_dens').checked = !c.checked;
+    if(c.checked){
+      document.getElementById('tar_f1').innerHTML = "f1: " + String(f2[0].toFixed(2));
+    }else{
+      document.getElementById('tar_f1').innerHTML = "f1: " + String(f1[0].toFixed(2));
+    }
+  }
+  function in1_r_inhom(c){
+    document.getElementById('in2_r_inhom').checked = !c.checked;
+    if(c.checked){
+      document.getElementById('tar_f2').innerHTML = "-f2: " + String(f1[1].toFixed(2));
+    }else{
+      document.getElementById('tar_f2').innerHTML = "-f2: " + String(f2[1].toFixed(2));
+    }
+  }
+  function in2_r_inhom(c){
+    document.getElementById('in1_r_inhom').checked = !c.checked;
+    if(c.checked){
+      document.getElementById('tar_f2').innerHTML = "-f2: " + String(f2[1].toFixed(2));
+    }else{
+      document.getElementById('tar_f2').innerHTML = "-f2: " + String(f1[1].toFixed(2));
+    }
+  }
+  function in1_pcp_ie(c){
+    document.getElementById('in2_pcp_ie').checked = !c.checked;
+    if(c.checked){
+      document.getElementById('tar_f3').innerHTML = "-f3: " + String(f1[2].toFixed(2));
+    }else{
+      document.getElementById('tar_f3').innerHTML = "-f3: " + String(f2[2].toFixed(2));
+    }
+  }
+  function in2_pcp_ie(c){
+    document.getElementById('in1_pcp_ie').checked = !c.checked;
+    if(c.checked){
+      document.getElementById('tar_f3').innerHTML = "-f3: " + String(f2[2].toFixed(2));
+    }else{
+      document.getElementById('tar_f3').innerHTML = "-f3: " + String(f1[2].toFixed(2));
+    }
+  }
+  function in1_small_int(c){
+    document.getElementById('in2_small_int').checked = !c.checked;
+    if(c.checked){
+      document.getElementById('tar_f4').innerHTML = "-f4: " + String(f1[3].toFixed(2));
+    }else{
+      document.getElementById('tar_f4').innerHTML = "-f4: " + String(f2[3].toFixed(2));
+    }
+  }
+  function in2_small_int(c){
+    document.getElementById('in1_small_int').checked = !c.checked;
+    if(c.checked){
+      document.getElementById('tar_f4').innerHTML = "-f4: " + String(f2[3].toFixed(2));
+    }else{
+      document.getElementById('tar_f4').innerHTML = "-f4: " + String(f1[3].toFixed(2));
+    }
+  }
+  // updating selections
+  function update_f1(){
+    console.log('idx1: ', idx1)
+    console.log('all_f1: ', all_f1)
+    f1 = all_f1[idx1];
+    document.getElementById('in1_f1').innerHTML = "f1: " + String(f1[0].toFixed(2));
+    document.getElementById('in1_f2').innerHTML = "f2: " + String(f1[1].toFixed(2));
+    document.getElementById('in1_f3').innerHTML = "f3: " + String(f1[2].toFixed(2));
+    document.getElementById('in1_f4').innerHTML = "f4: " + String(f1[3].toFixed(2));
+    // update target
+    if(document.getElementById('in1_r_dens').checked){
+      document.getElementById('tar_f1').innerHTML = "f1: " + String(f1[0].toFixed(2));
+    }
+    if(document.getElementById('in1_r_inhom').checked){
+      document.getElementById('tar_f2').innerHTML = "-f2: " + String(f1[1].toFixed(2));
+    }
+    if(document.getElementById('in1_pcp_ie').checked){
+      document.getElementById('tar_f3').innerHTML = "-f3: " + String(f1[2].toFixed(2));
+    }
+    if(document.getElementById('in1_small_int').checked){
+      document.getElementById('tar_f4').innerHTML = "-f4: " + String(f1[3].toFixed(2));
+    }
+  }
+  function update_f2(){
+    f2 = all_f2[idx2];
+    document.getElementById('in2_f1').innerHTML = "f1: " + String(f2[0].toFixed(2));
+    document.getElementById('in2_f2').innerHTML = "f2: " + String(f2[1].toFixed(2));
+    document.getElementById('in2_f3').innerHTML = "f3: " + String(f2[2].toFixed(2));
+    document.getElementById('in2_f4').innerHTML = "f4: " + String(f2[3].toFixed(2));
+    // update target
+    if(document.getElementById('in2_r_dens').checked){
+      document.getElementById('tar_f1').innerHTML = "f1: " + String(f2[0].toFixed(2));
+    }
+    if(document.getElementById('in2_r_inhom').checked){
+      document.getElementById('tar_f2').innerHTML = "-f2: " + String(f2[1].toFixed(2));
+    }
+    if(document.getElementById('in2_pcp_ie').checked){
+      document.getElementById('tar_f3').innerHTML = "-f3: " + String(f2[2].toFixed(2));
+    }
+    if(document.getElementById('in2_small_int').checked){
+      document.getElementById('tar_f4').innerHTML = "-f4: " + String(f2[3].toFixed(2));
+    }
+  }
+</script>
+</html>

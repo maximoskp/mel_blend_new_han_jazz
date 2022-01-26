@@ -1,0 +1,27 @@
+Feature names:['r_density', 'r_inhomogeneity', 'pcp_entropy', 'small_intervals', 'simple_syncopation', 'pentatonicity']
+han features:[0.48387097 0.05020833 0.70542918 0.52380952]
+jazz features:[0.25581395 0.69360119 0.50937031 0.3125    ]
+one_han_into_jazz_0 ================== 
+target features: [0.48387097 0.69360119 0.50937031 0.3125    ]
+best features: [0.2890625  0.62255952 0.47590124 0.3125    ]
+one_han_into_jazz_1 ================== 
+target features: [0.25581395 0.05020833 0.50937031 0.3125    ]
+best features: [0.25396825 0.03697917 0.5028005  0.33333333]
+one_han_into_jazz_2 ================== 
+target features: [0.25581395 0.69360119 0.70542918 0.3125    ]
+best features: [0.24806202 0.70901786 0.72807073 0.31034483]
+one_han_into_jazz_3 ================== 
+target features: [0.25581395 0.69360119 0.50937031 0.52380952]
+best features: [0.27131783 0.69297619 0.50161545 0.53125   ]
+one_jazz_into_han_0 ================== 
+target features: [0.25581395 0.05020833 0.70542918 0.52380952]
+best features: [0.20689655 0.07916667 0.7292929  0.52941176]
+one_jazz_into_han_1 ================== 
+target features: [0.48387097 0.69360119 0.70542918 0.52380952]
+best features: [0.4        0.7        0.70816138 0.52941176]
+one_jazz_into_han_2 ================== 
+target features: [0.48387097 0.05020833 0.50937031 0.52380952]
+best features: [0.48387097 0.05020833 0.50792249 0.54545455]
+one_jazz_into_han_3 ================== 
+target features: [0.48387097 0.05020833 0.70542918 0.3125    ]
+best features: [0.48333333 0.0703125  0.71381231 0.3125    ]
