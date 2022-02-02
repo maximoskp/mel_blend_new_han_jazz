@@ -11,7 +11,7 @@ var hc = []
 function initialise_chart(pca_1, pca_2, names_1, names_2){
     dat_1 = merge_pca_names(pca_1, names_1);
     static_dat_1 = JSON.parse(JSON.stringify(dat_1));
-    // console.log('dat_1: ', dat_1);
+    // console.log('dat_1 2: ', dat_1);
     dat_2 = merge_pca_names(pca_2, names_2);
     static_dat_2 = JSON.parse(JSON.stringify(dat_2));
     hc = Highcharts.chart('container', {

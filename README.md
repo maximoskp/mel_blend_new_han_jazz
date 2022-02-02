@@ -9,6 +9,12 @@ saved_data/
 saved_model/
 train_network/
 
+These folder can be found here:
+
+https://imisathena-my.sharepoint.com/:f:/g/personal/maximos_athenarc_gr/Er7tBpVLryRMu3DwT3B3SF4BGJybgAm5CiV67P2_eNXWzA?e=VX7NHn
+
+and need to be put in the root directory of the repo.
+
 # How to run
 
 1) cd to /website folder

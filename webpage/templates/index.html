@@ -69,7 +69,7 @@
     // $.post( "/get_data", JSON.stringify(data2send), function(la){console.log(la)});
     document.getElementById('pieces_num').value = 1.0;
     $.post( "/get_initial_data", JSON.stringify({}), function(resp){
-      // console.log(resp);
+      // console.log('resr: ', resp);
       initialise_chart(resp['s_pca_1'], resp['s_pca_2'], resp['s_names_1'], resp['s_names_2']);
       all_f1 = resp['s_features_1'];
       all_f2 = resp['s_features_2'];
